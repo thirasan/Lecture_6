@@ -31,7 +31,7 @@ public class MultiPlayerGui extends JFrame implements Observer {
 	private Game game;
 	private GameServer gameServer;
 	private GameClient gameClient;
-	
+
 	private boolean isServer;
 	private boolean isClient;
 
@@ -39,7 +39,7 @@ public class MultiPlayerGui extends JFrame implements Observer {
 	private JPanel mainPanel;
 	private JButton startServerButton;
 	private JButton startClientButton;
-	
+
 	public MultiPlayerGui() {
 		super("SSD - Tic Tac Toe Multiplayer");
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
@@ -59,10 +59,14 @@ public class MultiPlayerGui extends JFrame implements Observer {
 
 	public void startServer() {
 		// TODO: Complete the logic here
+		gameServer.start();
+		isServer = true;
 	}
 
 	public void startClient() {
 		// TODO: Complete the logic here
+		gameClient.connect();
+		isClient = true;
 	}
 
 	private void initComponents() {
@@ -144,21 +148,27 @@ public class MultiPlayerGui extends JFrame implements Observer {
 
 	@Override
 	public void update(Observable o, Object arg) {
-		// TODO: Complete the logic here
+		if (arg.equals(Network.CONNECT)) {
+			game.start();
+			refreshGui();
+		} else {
+			game = (Game) arg;
+			refreshGui();
+		}
 	}
 
 	public void refreshGui() {
-		if((isServer && game.isP1Turn()) || (isClient && game.isP2Turn())) {
+		if ((isServer && game.isP1Turn()) || (isClient && game.isP2Turn())) {
 			infoText.setText("Your Turn");
 		} else {
 			infoText.setText("Your Opponent's Turn");
 		}
 		mainPanel.repaint();
-		if(game.isEnd()) {
+		if (game.isEnd()) {
 			JOptionPane.showMessageDialog(this, game.getWinnerName() + " Win!");
 		}
 	}
-	
+
 	private class MouseHandler extends MouseAdapter {
 
 		@Override
@@ -166,9 +176,17 @@ public class MultiPlayerGui extends JFrame implements Observer {
 			int row = e.getY() / squareSize();
 			int col = e.getX() / squareSize();
 			// TODO: Complete the logic here
+			if (infoText.getText().equals("Your Turn")) {
+				game.currentPlayerTakesAction(row, col);
+				if (isServer) {
+					gameServer.send(game);
+				} else
+					gameClient.send(game);
+				refreshGui();
+			}
 		}
 	}
-	
+
 	public static void main(String[] args) {
 		MultiPlayerGui gui = new MultiPlayerGui();
 		gui.start();
